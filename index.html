@@ -1337,20 +1337,8 @@ for (var i = 1; i <= totalFrames; i++) {
   (function(idx) {
     var img = new Image();
     img.src = 'assets/frames/frame-' + String(idx).padStart(4, '0') + '.jpg';
-    img.onload = function() {
-      loadedA++;
-      if (loadedA === 1) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawImg(img, 1);
-      }
-      if (loadedA + loadedB >= Math.floor(totalFrames * 0.8)) {
-        var loader = document.getElementById('loader');
-        if (loader && loader.style.display !== 'none') {
-          loader.style.opacity = '0';
-          setTimeout(function() { loader.style.display = 'none'; }, 600);
-        }
-      }
-    };
+    img.onload = checkLoaderStatus;
+    img.onerror = checkLoaderStatus;
     framesA[idx - 1] = img;
   })(i);
 }
@@ -1360,19 +1348,29 @@ for (var j = 1; j <= totalFrames; j++) {
   (function(idx) {
     var img = new Image();
     img.src = 'assets/frames-b/frame-' + String(idx).padStart(4, '0') + '.jpg';
-    img.onload = function() {
-      loadedB++;
-      if (loadedA + loadedB >= Math.floor(totalFrames * 0.8)) {
-        var loader = document.getElementById('loader');
-        if (loader && loader.style.display !== 'none') {
-          loader.style.opacity = '0';
-          setTimeout(function() { loader.style.display = 'none'; }, 600);
-        }
-      }
-    };
+    img.onload = checkLoaderStatus;
+    img.onerror = checkLoaderStatus;
     framesB[idx - 1] = img;
   })(j);
 }
+
+function checkLoaderStatus() {
+  loadedA++; // We'll count both loads and errors to ensure the loader always dismisses
+  if (loadedA + loadedB >= Math.floor(totalFrames * 0.8)) {
+     hideLoader();
+  }
+}
+
+function hideLoader() {
+  var loader = document.getElementById('loader');
+  if (loader && loader.style.display !== 'none') {
+    loader.style.opacity = '0';
+    setTimeout(function() { loader.style.display = 'none'; }, 600);
+  }
+}
+
+// Fallback: ALWAYS hide loader after 3 seconds, no matter what
+setTimeout(hideLoader, 3000);
 
 /* ── Navbar scroll ── */
 window.addEventListener('scroll', function() {
@@ -1559,4 +1557,3 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
 </script>
 </body>
 </html>
-
