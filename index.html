@@ -160,11 +160,14 @@ nav.scrolled {
   position: relative;
   overflow: hidden;
 }
-#heroCanvas {
+.hero-bg-container {
   position: absolute;
   top: 0; left: 0;
-  display: block;
+  width: 100%; height: 100%;
   z-index: 1;
+  overflow: hidden;
+  /* A beautiful, deep premium gradient as a clean fallback */
+  background: linear-gradient(135deg, #04142b 0%, #07203d 100%);
 }
 
 /* Cinematic letterbox bars */
@@ -919,7 +922,9 @@ footer {
 
 <!-- ═══════ HERO ═══════ -->
 <section class="hero">
-  <canvas id="heroCanvas"></canvas>
+  <div class="hero-bg-container">
+    <!-- Clean gradient background, no images -->
+  </div>
   <div class="hero-grade"></div>
   <div class="hero-content">
     <div class="hero-eyebrow">For Veterans · Spouses · Survivors</div>
@@ -1249,130 +1254,23 @@ footer {
 <script>
 gsap.registerPlugin(ScrollTrigger);
 
-/* ── Canvas hero — dual scene crossfade ── */
-var canvas = document.getElementById('heroCanvas');
-var ctx = canvas.getContext('2d');
-
-var totalFrames = 121;
-var framesA = [];   // flag
-var framesB = [];   // dog tags
-var loadedA = 0, loadedB = 0;
-
-var currentFrame = 0;
-var lastTime = 0;
-var fps = 24;
-var interval = 1000 / fps;
-
-// Crossfade state
-var SCENE_HOLD = fps * 6;      // hold each scene 6s at full opacity
-var FADE_FRAMES = fps * 2;     // 2s fade between scenes
-var CYCLE = totalFrames + SCENE_HOLD + FADE_FRAMES; // total cycle length
-var globalTick = 0;            // counts every frame tick
-var sceneIndex = 0;            // 0 = flag, 1 = dog tags
-
-function resize() {
-  var w = window.innerWidth;
-  var h = window.innerHeight;
-  canvas.width = w;
-  canvas.height = h;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-}
-window.addEventListener('resize', resize);
-resize();
-
-function drawImg(img, alpha) {
-  if (!img || !img.complete) return;
-  ctx.globalAlpha = alpha;
-  var r = Math.max(canvas.width / img.width, canvas.height / img.height);
-  var w = img.width * r, h = img.height * r;
-  ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-}
-
-function animate(timestamp) {
-  requestAnimationFrame(animate);
-  if (loadedA < totalFrames || loadedB < totalFrames) return;
-  if (timestamp - lastTime < interval) return;
-  lastTime = timestamp;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Which frame within the current scene loop
-  var frameIdx = currentFrame;
-
-  // Position within the cycle: [0..totalFrames) play, [totalFrames..totalFrames+SCENE_HOLD) hold, then fade
-  var cyclePos = globalTick % (totalFrames + SCENE_HOLD + FADE_FRAMES);
-
-  var alpha = 1;
-  if (cyclePos >= totalFrames + SCENE_HOLD) {
-    // Fading out
-    var fadePos = cyclePos - (totalFrames + SCENE_HOLD);
-    alpha = 1 - fadePos / FADE_FRAMES;
+/* ── Loader Hide ── */
+window.addEventListener('load', function() {
+  var loader = document.getElementById('loader');
+  if (loader && loader.style.display !== 'none') {
+    loader.style.opacity = '0';
+    setTimeout(function() { loader.style.display = 'none'; }, 600);
   }
+});
 
-  // Draw current scene
-  var current = sceneIndex === 0 ? framesA : framesB;
-  var next    = sceneIndex === 0 ? framesB : framesA;
-
-  // Draw next scene underneath (always full opacity)
-  drawImg(next[frameIdx], 1);
-  // Draw current scene on top with fading alpha
-  drawImg(current[frameIdx], Math.max(0, alpha));
-
-  // Advance frame (loop within totalFrames during play, hold on last frame)
-  if (cyclePos < totalFrames - 1) {
-    currentFrame++;
-  } else if (cyclePos >= totalFrames + SCENE_HOLD + FADE_FRAMES - 1) {
-    // End of fade — switch scene, reset frame
-    sceneIndex = sceneIndex === 0 ? 1 : 0;
-    currentFrame = 0;
+// Fallback just in case load event takes too long
+setTimeout(function() {
+  var loader = document.getElementById('loader');
+  if (loader && loader.style.display !== 'none') {
+    loader.style.opacity = '0';
+    setTimeout(function() { loader.style.display = 'none'; }, 600);
   }
-
-  globalTick++;
-}
-requestAnimationFrame(animate);
-
-// Load flag frames (A)
-for (var i = 1; i <= totalFrames; i++) {
-  (function(idx) {
-    var img = new Image();
-    img.src = 'assets/frames/frame-' + String(idx).padStart(4, '0') + '.jpg';
-    img.onload = function() {
-      loadedA++;
-      if (loadedA === 1) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawImg(img, 1);
-      }
-      if (loadedA + loadedB >= Math.floor(totalFrames * 0.8)) {
-        var loader = document.getElementById('loader');
-        if (loader && loader.style.display !== 'none') {
-          loader.style.opacity = '0';
-          setTimeout(function() { loader.style.display = 'none'; }, 600);
-        }
-      }
-    };
-    framesA[idx - 1] = img;
-  })(i);
-}
-
-// Load dog tags frames (B)
-for (var j = 1; j <= totalFrames; j++) {
-  (function(idx) {
-    var img = new Image();
-    img.src = 'assets/frames-b/frame-' + String(idx).padStart(4, '0') + '.jpg';
-    img.onload = function() {
-      loadedB++;
-      if (loadedA + loadedB >= Math.floor(totalFrames * 0.8)) {
-        var loader = document.getElementById('loader');
-        if (loader && loader.style.display !== 'none') {
-          loader.style.opacity = '0';
-          setTimeout(function() { loader.style.display = 'none'; }, 600);
-        }
-      }
-    };
-    framesB[idx - 1] = img;
-  })(j);
-}
+}, 2000);
 
 /* ── Navbar scroll ── */
 window.addEventListener('scroll', function() {
